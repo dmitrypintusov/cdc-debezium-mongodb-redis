@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  mongo1:
+    container_name: mongo1
+    image: mongo
+    ports:
+      - 27017:27017
+    restart: always
+    networks:
+      - mongors-network
+    command: mongod --replSet my-mongo-set --bind_ip 0.0.0.0
+  mongo2:
+    container_name: mongo2
+    image: mongo
+    ports:
+      - 27018:27017
+    restart: always
+    networks:
+      - mongors-network
+    command: mongod --replSet my-mongo-set --bind_ip 0.0.0.0
+  mongo3:
+    container_name: mongo3
+    image: mongo
+    ports:
+      - 27019:27017
+    restart: always
+    networks:
+      - mongors-network
+    command: mongod --replSet my-mongo-set --bind_ip 0.0.0.0
+
+  mongoinit:
+    image: mongo
+    restart: "no"
+    networks:
+      - mongors-network
+    depends_on:
+      - mongo1
+      - mongo2
+      - mongo3
+    command: >
+      mongosh --host mongo1:27017 --eval
+      '
+      config = {
+      "_id" : "my-mongo-set",
+      "members" : [
+        {
+          "_id" : 0,
+          "host" : "mongo1:27017",
+          "priority": 3
+        },
+        {
+          "_id" : 1,
+          "host" : "mongo2:27017",
+          "priority": 2
+        },
+        {
+          "_id" : 2,
+          "host" : "mongo3:27017",
+          "priority": 1
+        }
+      ]
+      };
+      rs.initiate(config);'
+
+  redis:
+    image: redis:6.2
+    ports:
+      - '6379:6379'
+    command: redis-server --loglevel warning
+    volumes:
+      - cache:/data
+  insight:
+    image: redislabs/redisinsight:latest
+    ports:
+      - '8001:8001'
+    volumes:
+      - insight:/db
+
+networks:
+  mongors-network:
+
+volumes:
+  insight:
+  cache:

@@ -1,0 +1,9 @@
+logging:
+  level:
+    com.andersenlab.cdc: DEBUG
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
